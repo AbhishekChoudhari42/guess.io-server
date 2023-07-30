@@ -33,15 +33,14 @@ let users = {}
 io.on('connection', (socket) => {
 
     console.log('a user: ' +socket.id + 'has connected');
+
     let clientId = socket.id
+    
     socket.on('disconnect', () => {
 
     //Update all the data in the user's table:
-      
-    console.log('user ' +socket.id + ' disconnected');
-    
+      console.log('user ' +socket.id + ' disconnected');
         delete users[`${socket.id}`]
-
     });
 
     socket.on("update-table",(initialState)=>{
@@ -49,8 +48,6 @@ io.on('connection', (socket) => {
     })
 
     socket.on("points", (data) => {
-        users =  { ...users, [clientId]: { clientData : data.client_data }} 
-
         socket.broadcast.emit('points',data)
     })
 
