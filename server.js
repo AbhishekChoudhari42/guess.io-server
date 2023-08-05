@@ -28,14 +28,47 @@ const io = require("socket.io")(server,{
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
-let users = {}
+let users = []
+
+let userRoom = (uid) =>{
+    users.forEach(user=>{
+        if(user.uid == uid){
+            return user.room
+        }
+    }) 
+}
 
 io.on('connection', (socket) => {
 
     console.log('a user: ' +socket.id + 'has connected');
 
+    socket.on('join-room',(user)=>{
+        
+        const currentUser = {uid : socket.id , username : user.username , room:user.room}
+        
+        users.push(currentUser)
+        console.log(currentUser,"=====currentUser")
+        
+        let currentRoomUsers = [] 
+        
+        socket.join(currentUser.room)
+        console.log(socket.room,"====rooom")
+        
+        users.forEach(u=>{
+
+            if(u.room === currentUser.room){
+                console.log(currentUser.room)
+                currentRoomUsers.push(u)
+            }
+        })
+        console.log(currentRoomUsers,"====currentRoomUsers")
+
+        io.to(currentUser.room).emit('currentRoomUsers',currentRoomUsers)
+
+    })
+
     let clientId = socket.id
-    
+
     socket.on('disconnect', () => {
 
     //Update all the data in the user's table:
@@ -47,18 +80,28 @@ io.on('connection', (socket) => {
         console.log(initialState);
     })
 
+    // emit events to client room 
+
+    socket.on("message", (data) => {
+
+        console.log(data,"===message")
+        socket.to(data.user.room).emit('receive-msg', JSON.stringify(data))
+    
+    })
+
     socket.on("points", (data) => {
-        socket.broadcast.emit('points',data)
+        console.log(data)
+        socket.to(data.room).emit('points',data)
     })
 
     socket.on("startpoints", (data) => {
 
-        socket.broadcast.emit('startpoints',data)
+        socket.to(data.room).emit('startpoints',data)
     })
 
-    socket.on("endpoints", () => {
-
-        socket.broadcast.emit('endpoints')
+    socket.on("endpoints", (room) => {
+        // console.log(userRoom(room),"====room user")
+        socket.to(room).emit('endpoints')
     })
 
 });
